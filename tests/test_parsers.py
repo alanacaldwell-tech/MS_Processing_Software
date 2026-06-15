@@ -80,6 +80,25 @@ def test_plots_render():
     assert msp.volcano_plot(res) is not None
     hits = msp.filter_results(res, max_fdr=0.05, min_abs_log2fc=1.0)
     assert msp.abundance_heatmap(ds, cmap, proteins=hits.index) is not None
+    # Single-protein selection must not crash (clustermap empty-matrix guard).
+    assert msp.abundance_heatmap(ds, cmap, proteins=res.index[:1]) is not None
+
+
+def test_pca_runs_and_plots():
+    ds = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
+    cmap = msp.ConditionMap.from_mapping(
+        {
+            "Treatment": ["Treatment_1", "Treatment_2", "Treatment_3"],
+            "Mock": ["Mock_1", "Mock_2", "Mock_3"],
+        }
+    )
+    pca = msp.run_pca(ds, cmap, n_components=2)
+    # 6 samples (replicates), Condition + PC1 + PC2 columns.
+    assert pca.scores.shape[0] == 6
+    assert {"Condition", "PC1", "PC2"}.issubset(pca.scores.columns)
+    assert len(pca.explained_variance_ratio) == 2
+    assert pca.loadings.shape[1] == 2
+    assert msp.pca_plot(pca) is not None
 
 
 if __name__ == "__main__":
@@ -87,4 +106,5 @@ if __name__ == "__main__":
     test_parse_uniprot_entry_missing_fields()
     test_parse_enrichr_results_sorted()
     test_plots_render()
+    test_pca_runs_and_plots()
     print("All tests passed.")

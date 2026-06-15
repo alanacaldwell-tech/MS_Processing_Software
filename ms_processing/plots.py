@@ -33,8 +33,13 @@ def volcano_plot(
     """Volcano plot: log2 fold change (x) vs -log10 p-value (y).
 
     Points are colored as up-regulated, down-regulated, or not significant based
-    on ``fc_threshold`` (|log2FC|) and ``p_threshold``. Optionally labels the top
-    ``n_labels`` most significant hits using ``label_col``.
+    on ``fc_threshold`` (|log2FC|) and ``p_threshold``.
+
+    Labelling targets the most interesting hits by taking the union of the top
+    ``n_labels`` most significant and the top ``n_labels`` largest |log2FC|
+    (restricted to significant points). When the ``adjustText`` package is
+    installed, labels are repelled so they don't overlap each other or the
+    points; otherwise a simple offset is used.
 
     Args:
         use_adjusted: If True, use the adjusted p-value column for the y-axis and
@@ -70,14 +75,33 @@ def volcano_plot(
     ax.axvline(-fc_threshold, color="grey", ls="--", lw=0.8)
 
     if label_col and n_labels > 0:
-        top = df.loc[up | down].nlargest(n_labels, "_neglog10p")
-        for _, row in top.iterrows():
+        candidates = df.loc[up | down]
+        # Union of the most significant and the largest-magnitude fold changes.
+        by_sig = candidates.nlargest(n_labels, "_neglog10p")
+        by_fc = candidates.reindex(candidates[log2fc_col].abs().sort_values(ascending=False).index).head(n_labels)
+        to_label = pd.concat([by_sig, by_fc])
+        to_label = to_label[~to_label.index.duplicated()]
+
+        texts = []
+        for _, row in to_label.iterrows():
             text = str(row[label_col])
             if text and text.lower() != "nan":
-                ax.annotate(
-                    text, (row[log2fc_col], row["_neglog10p"]),
-                    fontsize=7, xytext=(3, 3), textcoords="offset points",
+                texts.append(
+                    ax.text(row[log2fc_col], row["_neglog10p"], text, fontsize=7)
                 )
+
+        try:  # repel labels so they don't overlap, if adjustText is available
+            from adjustText import adjust_text
+
+            adjust_text(
+                texts, ax=ax,
+                arrowprops=dict(arrowstyle="-", color="grey", lw=0.5),
+                expand=(1.2, 1.4),
+            )
+        except ImportError:
+            # Fallback: nudge labels off their points (may overlap on dense plots).
+            for t in texts:
+                t.set_position((t.get_position()[0] + 0.03, t.get_position()[1] + 0.03))
 
     ylabel = "-log10(adj p-value)" if use_adjusted else "-log10(p-value)"
     ax.set_xlabel("log2(fold change)")
@@ -162,6 +186,54 @@ def abundance_heatmap(
     )
     ax.set_xlabel("Replicate")
     ax.set_ylabel("Protein")
+    return ax
+
+
+def pca_plot(
+    pca_result,
+    *,
+    pc_x: int = 1,
+    pc_y: int = 2,
+    label_samples: bool = True,
+    ax: plt.Axes | None = None,
+) -> plt.Axes:
+    """Scatter plot of PCA sample scores, colored by condition.
+
+    Args:
+        pca_result: A :class:`~ms_processing.multivariate.PCAResult`.
+        pc_x, pc_y: 1-based component numbers for the x and y axes.
+        label_samples: Annotate each point with its sample (replicate) name.
+    """
+    scores = pca_result.scores
+    x_col, y_col = f"PC{pc_x}", f"PC{pc_y}"
+    for col in (x_col, y_col):
+        if col not in scores.columns:
+            raise ValueError(
+                f"{col} not available; PCA computed {pca_result.n_components} component(s)."
+            )
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 6))
+
+    if "Condition" in scores.columns:
+        for condition, sub in scores.groupby("Condition"):
+            ax.scatter(sub[x_col], sub[y_col], s=60, alpha=0.85, label=str(condition))
+        ax.legend(frameon=False, fontsize=8, title="Condition")
+    else:
+        ax.scatter(scores[x_col], scores[y_col], s=60, alpha=0.85)
+
+    if label_samples:
+        for sample, row in scores.iterrows():
+            ax.annotate(
+                str(sample), (row[x_col], row[y_col]),
+                fontsize=7, xytext=(4, 4), textcoords="offset points",
+            )
+
+    ax.axhline(0, color="grey", lw=0.6, ls="--")
+    ax.axvline(0, color="grey", lw=0.6, ls="--")
+    ax.set_xlabel(pca_result.variance_label(pc_x))
+    ax.set_ylabel(pca_result.variance_label(pc_y))
+    ax.set_title("PCA of samples")
     return ax
 
 

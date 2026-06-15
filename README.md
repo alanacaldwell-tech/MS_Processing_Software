@@ -24,11 +24,15 @@ conditions (fold change + statistics) → filter → visualize → annotate → 
    log2(fold change), two-sided independent t-test p-value, adjusted p-value /
    FDR (selectable correction method), and −log10(p-value).
 5. **Filter** by p-value, FDR, |log2 fold change|, and `# Unique Peptides`.
-6. **Visualize**: volcano plot (log2FC vs −log10 p) and clustered abundance
+6. **Visualize**: volcano plot (log2FC vs −log10 p, with non-overlapping labels
+   for the top significant / largest fold-change hits) and a clustered abundance
    heatmap of the significant proteins.
-7. **Annotate** each protein with its **subcellular localization** and a snapshot
+7. **PCA**: principal component analysis over the samples (replicates as
+   observations, proteins as features) to assess replicate clustering and
+   condition separation.
+8. **Annotate** each protein with its **subcellular localization** and a snapshot
    of its **function** via the UniProt REST API.
-8. **GO enrichment**: over-representation test of the significant genes against a
+9. **GO enrichment**: over-representation test of the significant genes against a
    GO gene-set library via the Enrichr API.
 
 ### Network note
@@ -87,7 +91,8 @@ hits = msp.filter_results(results, max_fdr=0.05, min_abs_log2fc=1.0, min_unique_
 | `ms_processing/conditions.py` | Assign replicate columns to conditions |
 | `ms_processing/stats.py` | Means, fold change, t-tests, multiple-testing correction |
 | `ms_processing/filtering.py` | Filter results by p-value / FDR / fold change / peptides |
-| `ms_processing/plots.py` | Volcano plot, abundance heatmap, enrichment bar plot |
+| `ms_processing/plots.py` | Volcano plot, abundance heatmap, PCA plot, enrichment bar plot |
+| `ms_processing/multivariate.py` | PCA over samples (scikit-learn) |
 | `ms_processing/annotations.py` | UniProt lookups: subcellular localization + function |
 | `ms_processing/enrichment.py` | GO term enrichment via Enrichr |
 

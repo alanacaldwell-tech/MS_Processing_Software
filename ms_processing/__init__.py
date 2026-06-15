@@ -38,7 +38,8 @@ from .enrichment import (
     enrich_genes,
     parse_enrichr_results,
 )
-from .plots import abundance_heatmap, enrichment_barplot, volcano_plot
+from .plots import abundance_heatmap, enrichment_barplot, pca_plot, volcano_plot
+from .multivariate import PCAResult, run_pca
 
 __all__ = [
     "DEFAULT_DATA_START_COLUMN",
@@ -71,7 +72,10 @@ __all__ = [
     "parse_enrichr_results",
     "abundance_heatmap",
     "enrichment_barplot",
+    "pca_plot",
     "volcano_plot",
+    "PCAResult",
+    "run_pca",
 ]
 
 __version__ = "0.1.0"
