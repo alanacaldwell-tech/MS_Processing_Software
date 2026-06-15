@@ -1,0 +1,10 @@
+# Core data processing
+pandas>=2.0
+numpy>=1.24
+openpyxl>=3.1        # Excel (.xlsx) reading/writing
+scipy>=1.10          # t-tests and other statistics
+statsmodels>=0.14    # multiple-testing correction (Benjamini-Hochberg, etc.)
+
+# Notebook environment
+jupyter>=1.0
+ipykernel>=6.0
