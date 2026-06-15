@@ -132,10 +132,23 @@ def abundance_heatmap(
         row_std = data.std(axis=1).replace(0, np.nan)
         data = data.sub(data.mean(axis=1), axis=0).div(row_std, axis=0).dropna(how="any")
 
+    if data.empty:
+        raise ValueError(
+            "No proteins left to plot in the heatmap after preparing the data. "
+            "If z-scoring is on, every selected protein may have had zero variance "
+            "across replicates; try zscore_rows=False or widen the protein selection."
+        )
+
     cmap = "vlag" if zscore_rows else "viridis"
-    if cluster:
+
+    # Clustering needs >= 2 observations along a dimension. Fall back gracefully
+    # when only one protein/replicate is present so a 1-row heatmap still renders.
+    can_cluster_rows = data.shape[0] >= 2
+    can_cluster_cols = data.shape[1] >= 2
+    if cluster and (can_cluster_rows or can_cluster_cols):
         grid = sns.clustermap(
             data, cmap=cmap, center=0 if zscore_rows else None,
+            row_cluster=can_cluster_rows, col_cluster=can_cluster_cols,
             figsize=(max(6, 0.4 * data.shape[1] + 4), max(6, 0.25 * len(data) + 2)),
             xticklabels=True, yticklabels=True, cbar_kws={"label": "z-score" if zscore_rows else "abundance"},
         )
