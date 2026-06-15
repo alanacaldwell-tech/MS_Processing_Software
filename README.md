@@ -11,7 +11,7 @@ consistent between the notebook and the eventual app.
 ## Pipeline
 
 **ingest → group biological replicates into conditions → average → compare
-conditions (fold change + statistics) → filter**
+conditions (fold change + statistics) → filter → visualize → annotate → GO enrichment**
 
 1. **Ingest** an Excel file. First row = headers; each row = one identified
    protein. Columns A–Y are annotation/metadata (protein IDs, gene names,
@@ -24,6 +24,19 @@ conditions (fold change + statistics) → filter**
    log2(fold change), two-sided independent t-test p-value, adjusted p-value /
    FDR (selectable correction method), and −log10(p-value).
 5. **Filter** by p-value, FDR, |log2 fold change|, and `# Unique Peptides`.
+6. **Visualize**: volcano plot (log2FC vs −log10 p) and clustered abundance
+   heatmap of the significant proteins.
+7. **Annotate** each protein with its **subcellular localization** and a snapshot
+   of its **function** via the UniProt REST API.
+8. **GO enrichment**: over-representation test of the significant genes against a
+   GO gene-set library via the Enrichr API.
+
+### Network note
+
+Steps 7–8 call external services (`rest.uniprot.org`, `maayanlab.cloud`) and need
+outbound internet access at runtime. They raise `AnnotationServiceError` /
+`EnrichmentServiceError` if unreachable, and the notebook degrades gracefully so
+the rest of the pipeline still runs offline.
 
 ## Data assumptions
 
@@ -74,10 +87,18 @@ hits = msp.filter_results(results, max_fdr=0.05, min_abs_log2fc=1.0, min_unique_
 | `ms_processing/conditions.py` | Assign replicate columns to conditions |
 | `ms_processing/stats.py` | Means, fold change, t-tests, multiple-testing correction |
 | `ms_processing/filtering.py` | Filter results by p-value / FDR / fold change / peptides |
+| `ms_processing/plots.py` | Volcano plot, abundance heatmap, enrichment bar plot |
+| `ms_processing/annotations.py` | UniProt lookups: subcellular localization + function |
+| `ms_processing/enrichment.py` | GO term enrichment via Enrichr |
+
+## Tests
+
+```bash
+python tests/test_parsers.py        # offline parser + plotting checks
+```
 
 ## Roadmap
 
 - Remote file storage for uploaded data sets.
 - Web / GUI front end on top of `ms_processing`.
 - Normalization & imputation steps.
-- Visualizations (volcano plot, heatmaps).

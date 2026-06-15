@@ -5,6 +5,13 @@ openpyxl>=3.1        # Excel (.xlsx) reading/writing
 scipy>=1.10          # t-tests and other statistics
 statsmodels>=0.14    # multiple-testing correction (Benjamini-Hochberg, etc.)
 
+# Visualization
+matplotlib>=3.7      # heatmaps, volcano plots, enrichment bar plots
+seaborn>=0.12        # statistical plotting helpers (heatmap/clustermap)
+
+# External annotation services (UniProt REST, Enrichr)
+requests>=2.31       # HTTP client for UniProt + Enrichr APIs
+
 # Notebook environment
 jupyter>=1.0
 ipykernel>=6.0

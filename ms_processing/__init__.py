@@ -25,6 +25,20 @@ from .stats import (
     condition_means,
 )
 from .filtering import DEFAULT_UNIQUE_PEPTIDES_COL, filter_results
+from .annotations import (
+    AnnotationServiceError,
+    annotate_results,
+    fetch_annotations,
+    parse_uniprot_entry,
+)
+from .enrichment import (
+    DEFAULT_LIBRARY,
+    GO_LIBRARIES,
+    EnrichmentServiceError,
+    enrich_genes,
+    parse_enrichr_results,
+)
+from .plots import abundance_heatmap, enrichment_barplot, volcano_plot
 
 __all__ = [
     "DEFAULT_DATA_START_COLUMN",
@@ -46,6 +60,18 @@ __all__ = [
     "condition_means",
     "DEFAULT_UNIQUE_PEPTIDES_COL",
     "filter_results",
+    "AnnotationServiceError",
+    "annotate_results",
+    "fetch_annotations",
+    "parse_uniprot_entry",
+    "DEFAULT_LIBRARY",
+    "GO_LIBRARIES",
+    "EnrichmentServiceError",
+    "enrich_genes",
+    "parse_enrichr_results",
+    "abundance_heatmap",
+    "enrichment_barplot",
+    "volcano_plot",
 ]
 
 __version__ = "0.1.0"
