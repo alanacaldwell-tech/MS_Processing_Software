@@ -101,10 +101,57 @@ def test_pca_runs_and_plots():
     assert msp.pca_plot(pca) is not None
 
 
+def test_umap_runs_and_plots():
+    ds = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
+    cmap = msp.ConditionMap.from_mapping(
+        {
+            "Treatment": ["Treatment_1", "Treatment_2", "Treatment_3"],
+            "Mock": ["Mock_1", "Mock_2", "Mock_3"],
+        }
+    )
+    um = msp.run_umap(ds, cmap, n_components=2)
+    assert um.embedding.shape[0] == 6
+    assert {"Condition", "UMAP1", "UMAP2"}.issubset(um.embedding.columns)
+    # n_neighbors must be capped below the sample count.
+    assert um.params["n_neighbors"] < 6
+    assert msp.umap_plot(um) is not None
+
+
+def test_crossdataset_compare():
+    cmap = msp.ConditionMap.from_mapping(
+        {
+            "Treatment": ["Treatment_1", "Treatment_2", "Treatment_3"],
+            "Mock": ["Mock_1", "Mock_2", "Mock_3"],
+        }
+    )
+    ds_a = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
+    ds_b = msp.load_dataset("sample_data/sample_dataset_2.xlsx", "ABPP", 6)
+    results = {
+        "A": msp.compare_conditions(ds_a, cmap, "Treatment", "Mock"),
+        "B": msp.compare_conditions(ds_b, cmap, "Treatment", "Mock"),
+    }
+
+    aligned = msp.align_results(results)
+    assert "log2_fold_change__A" in aligned.columns
+    assert "log2_fold_change__B" in aligned.columns
+    assert len(aligned) == 200
+
+    sig = msp.significant_sets(results, max_fdr=0.05, min_abs_log2fc=1.0)
+    summary = msp.overlap_summary(sig)
+    assert summary["n_shared"] <= min(summary["per_dataset_counts"].values())
+    assert summary["n_union"] >= summary["n_shared"]
+
+    r = msp.correlate_metric(aligned, "A", "B")
+    assert -1.0 <= r <= 1.0
+    assert msp.compare_scatter(aligned, "A", "B") is not None
+
+
 if __name__ == "__main__":
     test_parse_uniprot_entry()
     test_parse_uniprot_entry_missing_fields()
     test_parse_enrichr_results_sorted()
     test_plots_render()
     test_pca_runs_and_plots()
+    test_umap_runs_and_plots()
+    test_crossdataset_compare()
     print("All tests passed.")

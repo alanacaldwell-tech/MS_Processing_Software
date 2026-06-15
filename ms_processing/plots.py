@@ -189,28 +189,22 @@ def abundance_heatmap(
     return ax
 
 
-def pca_plot(
-    pca_result,
+def _embedding_scatter(
+    scores: pd.DataFrame,
+    x_col: str,
+    y_col: str,
     *,
-    pc_x: int = 1,
-    pc_y: int = 2,
-    label_samples: bool = True,
-    ax: plt.Axes | None = None,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    label_samples: bool,
+    draw_origin: bool,
+    ax: plt.Axes | None,
 ) -> plt.Axes:
-    """Scatter plot of PCA sample scores, colored by condition.
-
-    Args:
-        pca_result: A :class:`~ms_processing.multivariate.PCAResult`.
-        pc_x, pc_y: 1-based component numbers for the x and y axes.
-        label_samples: Annotate each point with its sample (replicate) name.
-    """
-    scores = pca_result.scores
-    x_col, y_col = f"PC{pc_x}", f"PC{pc_y}"
+    """Shared sample-scatter used by the PCA and UMAP plots, colored by condition."""
     for col in (x_col, y_col):
         if col not in scores.columns:
-            raise ValueError(
-                f"{col} not available; PCA computed {pca_result.n_components} component(s)."
-            )
+            raise ValueError(f"{col} not available in the embedding.")
 
     if ax is None:
         _, ax = plt.subplots(figsize=(7, 6))
@@ -229,12 +223,60 @@ def pca_plot(
                 fontsize=7, xytext=(4, 4), textcoords="offset points",
             )
 
-    ax.axhline(0, color="grey", lw=0.6, ls="--")
-    ax.axvline(0, color="grey", lw=0.6, ls="--")
-    ax.set_xlabel(pca_result.variance_label(pc_x))
-    ax.set_ylabel(pca_result.variance_label(pc_y))
-    ax.set_title("PCA of samples")
+    if draw_origin:
+        ax.axhline(0, color="grey", lw=0.6, ls="--")
+        ax.axvline(0, color="grey", lw=0.6, ls="--")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
     return ax
+
+
+def pca_plot(
+    pca_result,
+    *,
+    pc_x: int = 1,
+    pc_y: int = 2,
+    label_samples: bool = True,
+    ax: plt.Axes | None = None,
+) -> plt.Axes:
+    """Scatter plot of PCA sample scores, colored by condition.
+
+    Args:
+        pca_result: A :class:`~ms_processing.multivariate.PCAResult`.
+        pc_x, pc_y: 1-based component numbers for the x and y axes.
+        label_samples: Annotate each point with its sample (replicate) name.
+    """
+    return _embedding_scatter(
+        pca_result.scores, f"PC{pc_x}", f"PC{pc_y}",
+        xlabel=pca_result.variance_label(pc_x),
+        ylabel=pca_result.variance_label(pc_y),
+        title="PCA of samples",
+        label_samples=label_samples, draw_origin=True, ax=ax,
+    )
+
+
+def umap_plot(
+    umap_result,
+    *,
+    x: int = 1,
+    y: int = 2,
+    label_samples: bool = True,
+    ax: plt.Axes | None = None,
+) -> plt.Axes:
+    """Scatter plot of a UMAP sample embedding, colored by condition.
+
+    Args:
+        umap_result: A :class:`~ms_processing.multivariate.UMAPResult`.
+        x, y: 1-based embedding dimensions for the axes.
+        label_samples: Annotate each point with its sample (replicate) name.
+    """
+    return _embedding_scatter(
+        umap_result.embedding, f"UMAP{x}", f"UMAP{y}",
+        xlabel=f"UMAP{x}", ylabel=f"UMAP{y}",
+        title="UMAP of samples",
+        label_samples=label_samples, draw_origin=False, ax=ax,
+    )
 
 
 def enrichment_barplot(
@@ -260,4 +302,49 @@ def enrichment_barplot(
     ax.set_xlabel("-log10(adjusted p-value)")
     ax.set_title(f"Top {min(top_n, len(df))} enriched terms")
     ax.tick_params(axis="y", labelsize=8)
+    return ax
+
+
+def compare_scatter(
+    aligned: pd.DataFrame,
+    name_x: str,
+    name_y: str,
+    *,
+    metric: str = "log2_fold_change",
+    label_col: str | None = "Gene",
+    annotate_corr: bool = True,
+    ax: plt.Axes | None = None,
+) -> plt.Axes:
+    """Scatter of a metric (e.g. log2 fold change) between two data sets.
+
+    Takes the wide table from :func:`ms_processing.crossdataset.align_results` and
+    plots ``metric__name_x`` vs ``metric__name_y`` for proteins measured in both,
+    with a y=x reference line and (optionally) the Pearson correlation.
+    """
+    x_col, y_col = f"{metric}__{name_x}", f"{metric}__{name_y}"
+    for col in (x_col, y_col):
+        if col not in aligned.columns:
+            raise KeyError(f"Column {col!r} not found in aligned table.")
+
+    pair = aligned[[c for c in (x_col, y_col, label_col) if c]].dropna(subset=[x_col, y_col])
+    if pair.empty:
+        raise ValueError("No proteins measured in both data sets to compare.")
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(6, 6))
+
+    ax.scatter(pair[x_col], pair[y_col], s=14, alpha=0.6, edgecolors="none", c="#34495e")
+
+    lo = float(min(pair[x_col].min(), pair[y_col].min()))
+    hi = float(max(pair[x_col].max(), pair[y_col].max()))
+    ax.plot([lo, hi], [lo, hi], color="grey", ls="--", lw=0.8)
+
+    if annotate_corr:
+        r = pair[x_col].corr(pair[y_col])
+        ax.text(0.05, 0.95, f"r = {r:.2f}\nn = {len(pair)}",
+                transform=ax.transAxes, va="top", fontsize=9)
+
+    ax.set_xlabel(f"{metric} ({name_x})")
+    ax.set_ylabel(f"{metric} ({name_y})")
+    ax.set_title(f"{metric}: {name_x} vs {name_y}")
     return ax

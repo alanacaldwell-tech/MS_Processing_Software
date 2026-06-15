@@ -38,8 +38,21 @@ from .enrichment import (
     enrich_genes,
     parse_enrichr_results,
 )
-from .plots import abundance_heatmap, enrichment_barplot, pca_plot, volcano_plot
-from .multivariate import PCAResult, run_pca
+from .plots import (
+    abundance_heatmap,
+    compare_scatter,
+    enrichment_barplot,
+    pca_plot,
+    umap_plot,
+    volcano_plot,
+)
+from .multivariate import PCAResult, UMAPResult, run_pca, run_umap
+from .crossdataset import (
+    align_results,
+    correlate_metric,
+    overlap_summary,
+    significant_sets,
+)
 
 __all__ = [
     "DEFAULT_DATA_START_COLUMN",
@@ -71,11 +84,19 @@ __all__ = [
     "enrich_genes",
     "parse_enrichr_results",
     "abundance_heatmap",
+    "compare_scatter",
     "enrichment_barplot",
     "pca_plot",
+    "umap_plot",
     "volcano_plot",
     "PCAResult",
+    "UMAPResult",
     "run_pca",
+    "run_umap",
+    "align_results",
+    "correlate_metric",
+    "overlap_summary",
+    "significant_sets",
 ]
 
 __version__ = "0.1.0"
