@@ -201,7 +201,7 @@ def _embedding_scatter(
     draw_origin: bool,
     ax: plt.Axes | None,
 ) -> plt.Axes:
-    """Shared sample-scatter used by the PCA and UMAP plots, colored by condition."""
+    """Shared sample-scatter used by the PCA plot, colored by condition."""
     for col in (x_col, y_col):
         if col not in scores.columns:
             raise ValueError(f"{col} not available in the embedding.")
@@ -253,29 +253,6 @@ def pca_plot(
         ylabel=pca_result.variance_label(pc_y),
         title="PCA of samples",
         label_samples=label_samples, draw_origin=True, ax=ax,
-    )
-
-
-def umap_plot(
-    umap_result,
-    *,
-    x: int = 1,
-    y: int = 2,
-    label_samples: bool = True,
-    ax: plt.Axes | None = None,
-) -> plt.Axes:
-    """Scatter plot of a UMAP sample embedding, colored by condition.
-
-    Args:
-        umap_result: A :class:`~ms_processing.multivariate.UMAPResult`.
-        x, y: 1-based embedding dimensions for the axes.
-        label_samples: Annotate each point with its sample (replicate) name.
-    """
-    return _embedding_scatter(
-        umap_result.embedding, f"UMAP{x}", f"UMAP{y}",
-        xlabel=f"UMAP{x}", ylabel=f"UMAP{y}",
-        title="UMAP of samples",
-        label_samples=label_samples, draw_origin=False, ax=ax,
     )
 
 

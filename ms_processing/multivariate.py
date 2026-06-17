@@ -42,22 +42,6 @@ class PCAResult:
         return f"PC{component} ({pct:.1f}%)"
 
 
-@dataclass
-class UMAPResult:
-    """Result of a UMAP embedding.
-
-    Attributes:
-        embedding: Sample x component DataFrame (UMAP1, UMAP2, ...), with a
-            ``Condition`` column when a condition map was supplied.
-        n_components: Number of embedding dimensions.
-        params: The UMAP parameters used (n_neighbors, min_dist, ...).
-    """
-
-    embedding: pd.DataFrame
-    n_components: int
-    params: dict
-
-
 def _prepare_matrix(
     dataset: ProteomicsDataset,
     *,
@@ -65,7 +49,7 @@ def _prepare_matrix(
     log_transform: bool,
     method: str,
 ):
-    """Build the samples x proteins matrix used by PCA/UMAP.
+    """Build the samples x proteins matrix used by PCA.
 
     Returns ``(matrix, x)`` where ``matrix`` is the (index-preserving) DataFrame
     and ``x`` is the numeric array after optional log/scale transforms.
@@ -149,77 +133,4 @@ def run_pca(
         explained_variance_ratio=pca.explained_variance_ratio_,
         loadings=loadings,
         n_components=k,
-    )
-
-
-def run_umap(
-    dataset: ProteomicsDataset,
-    condition_map: ConditionMap | None = None,
-    *,
-    n_components: int = 2,
-    n_neighbors: int = 15,
-    min_dist: float = 0.1,
-    metric: str = "euclidean",
-    scale: bool = True,
-    log_transform: bool = False,
-    use_pca: bool = True,
-    n_pca_components: int = 50,
-    random_state: int = 42,
-) -> UMAPResult:
-    """Run a UMAP embedding over the samples of ``dataset``.
-
-    Like :func:`run_pca`, samples (data columns) are the observations and proteins
-    are the features. By default PCA is applied first (a common, faster, less
-    noisy pipeline) and UMAP runs on the principal components.
-
-    Args:
-        n_neighbors: UMAP neighborhood size. Automatically capped to one less than
-            the number of samples (UMAP requires ``n_neighbors < n_samples``).
-        min_dist: UMAP minimum distance between embedded points.
-        use_pca: If True, reduce to ``n_pca_components`` PCs before UMAP.
-        n_pca_components: PCs to keep when ``use_pca`` is True (capped to the data).
-        random_state: Seed for reproducible embeddings.
-
-    Returns:
-        A :class:`UMAPResult`.
-    """
-    import umap  # imported lazily; heavy dependency (numba)
-
-    matrix, x = _prepare_matrix(
-        dataset, scale=scale, log_transform=log_transform, method="UMAP"
-    )
-
-    if use_pca:
-        n_pcs = min(n_pca_components, matrix.shape[0], matrix.shape[1])
-        x = PCA(n_components=n_pcs).fit_transform(x)
-
-    n_samples = matrix.shape[0]
-    effective_neighbors = max(2, min(n_neighbors, n_samples - 1))
-    # With very few samples spectral init is unstable; fall back to random.
-    init = "random" if n_samples < 10 else "spectral"
-
-    reducer = umap.UMAP(
-        n_components=n_components,
-        n_neighbors=effective_neighbors,
-        min_dist=min_dist,
-        metric=metric,
-        init=init,
-        random_state=random_state,
-    )
-    embedded = reducer.fit_transform(x)
-
-    component_names = [f"UMAP{i}" for i in range(1, n_components + 1)]
-    embedding = pd.DataFrame(embedded, index=matrix.index, columns=component_names)
-    embedding = _attach_conditions(embedding, dataset, condition_map)
-
-    return UMAPResult(
-        embedding=embedding,
-        n_components=n_components,
-        params={
-            "n_neighbors": effective_neighbors,
-            "min_dist": min_dist,
-            "metric": metric,
-            "use_pca": use_pca,
-            "init": init,
-        },
     )

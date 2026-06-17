@@ -17,7 +17,47 @@ from collections.abc import Mapping
 
 import pandas as pd
 
+from .conditions import ConditionMap
+from .dataset import ProteomicsDataset
 from .filtering import filter_results
+from .stats import DEFAULT_CORRECTION, compare_conditions
+
+
+def compare_across_datasets(
+    datasets: Mapping[str, ProteomicsDataset],
+    condition_maps: ConditionMap | Mapping[str, ConditionMap],
+    numerator: str,
+    denominator: str,
+    *,
+    correction: str = DEFAULT_CORRECTION,
+    equal_var: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Run the same comparison on several data sets.
+
+    ``condition_maps`` accepts either:
+
+    * a single :class:`~ms_processing.conditions.ConditionMap` applied to every
+      data set (use when the replicate columns are **identical** across files), or
+    * a ``{dataset_name: ConditionMap}`` mapping (use when the column-to-condition
+      assignment must be **adjusted per file**).
+
+    Returns a ``{dataset_name: results}`` mapping, where each value is the table
+    from :func:`ms_processing.stats.compare_conditions`.
+    """
+    shared = isinstance(condition_maps, ConditionMap)
+    if not shared:
+        missing = [name for name in datasets if name not in condition_maps]
+        if missing:
+            raise KeyError(f"No condition map provided for data set(s): {missing}.")
+
+    results: dict[str, pd.DataFrame] = {}
+    for name, dataset in datasets.items():
+        cmap = condition_maps if shared else condition_maps[name]
+        results[name] = compare_conditions(
+            dataset, cmap, numerator, denominator,
+            correction=correction, equal_var=equal_var,
+        )
+    return results
 
 
 def align_results(

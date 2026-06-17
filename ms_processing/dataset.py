@@ -11,6 +11,7 @@ A data set is one Excel sheet where:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -122,3 +123,94 @@ def load_dataset(
         plex=plex_cfg,
         data_start_column=data_start_column,
     )
+
+
+@dataclass
+class DatasetSpec:
+    """Per-file loading configuration for a single Excel data set.
+
+    Use this when files do NOT share the same layout — each file carries its own
+    experiment type, plex, data-start column and sheet. ``name`` defaults to the
+    file stem and is used as the key in the loaded-datasets mapping.
+    """
+
+    path: str | Path
+    experiment_type: str | ExperimentType
+    plex: int | PlexConfig
+    name: str | None = None
+    data_start_column: str = DEFAULT_DATA_START_COLUMN
+    sheet_name: str | int = 0
+
+    @property
+    def resolved_name(self) -> str:
+        return self.name or Path(self.path).stem
+
+
+def load_datasets(
+    sources: Sequence[str | Path | DatasetSpec],
+    experiment_type: str | ExperimentType | None = None,
+    plex: int | PlexConfig | None = None,
+    *,
+    data_start_column: str = DEFAULT_DATA_START_COLUMN,
+    sheet_name: str | int = 0,
+    names: Sequence[str] | None = None,
+) -> dict[str, ProteomicsDataset]:
+    """Load one or more Excel files into a name -> :class:`ProteomicsDataset` map.
+
+    Two modes, matching "are the columns identical across files?":
+
+    * **Identical columns** — pass a list of file paths plus shared
+      ``experiment_type`` and ``plex`` (and optionally ``data_start_column`` /
+      ``sheet_name``). The same configuration is applied to every file. Provide
+      ``names`` to label them; otherwise file stems are used.
+    * **Adjusted per file** — pass a list of :class:`DatasetSpec`, each carrying
+      its own configuration. ``experiment_type`` / ``plex`` here are ignored.
+
+    Raises:
+        ValueError: if paths are given without shared ``experiment_type``/``plex``,
+            if ``names`` length mismatches, or if two data sets resolve to the
+            same name.
+    """
+    if not sources:
+        raise ValueError("No files provided to load.")
+
+    all_specs = all(isinstance(s, DatasetSpec) for s in sources)
+    any_specs = any(isinstance(s, DatasetSpec) for s in sources)
+    if any_specs and not all_specs:
+        raise ValueError("Mix of paths and DatasetSpec is not supported; use one or the other.")
+
+    if all_specs:
+        specs: list[DatasetSpec] = list(sources)  # type: ignore[arg-type]
+    else:
+        if experiment_type is None or plex is None:
+            raise ValueError(
+                "When passing file paths, 'experiment_type' and 'plex' are required "
+                "(shared across all files). For per-file settings pass DatasetSpec objects."
+            )
+        if names is not None and len(names) != len(sources):
+            raise ValueError(f"Got {len(names)} names for {len(sources)} files.")
+        specs = [
+            DatasetSpec(
+                path=path,
+                experiment_type=experiment_type,
+                plex=plex,
+                name=(names[i] if names is not None else None),
+                data_start_column=data_start_column,
+                sheet_name=sheet_name,
+            )
+            for i, path in enumerate(sources)
+        ]
+
+    datasets: dict[str, ProteomicsDataset] = {}
+    for spec in specs:
+        name = spec.resolved_name
+        if name in datasets:
+            raise ValueError(f"Duplicate data set name {name!r}; give explicit unique names.")
+        datasets[name] = load_dataset(
+            spec.path,
+            experiment_type=spec.experiment_type,
+            plex=spec.plex,
+            sheet_name=spec.sheet_name,
+            data_start_column=spec.data_start_column,
+        )
+    return datasets

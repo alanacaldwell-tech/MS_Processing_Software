@@ -15,7 +15,7 @@ from .columns import (
 )
 from .experiments import EXPERIMENT_TYPES, ExperimentType, get_experiment_type
 from .plex import STANDARD_PLEXES, PlexConfig
-from .dataset import ProteomicsDataset, load_dataset
+from .dataset import DatasetSpec, ProteomicsDataset, load_dataset, load_datasets
 from .conditions import Condition, ConditionMap
 from .stats import (
     CORRECTION_METHODS,
@@ -43,12 +43,12 @@ from .plots import (
     compare_scatter,
     enrichment_barplot,
     pca_plot,
-    umap_plot,
     volcano_plot,
 )
-from .multivariate import PCAResult, UMAPResult, run_pca, run_umap
+from .multivariate import PCAResult, run_pca
 from .crossdataset import (
     align_results,
+    compare_across_datasets,
     correlate_metric,
     overlap_summary,
     significant_sets,
@@ -65,6 +65,8 @@ __all__ = [
     "PlexConfig",
     "ProteomicsDataset",
     "load_dataset",
+    "DatasetSpec",
+    "load_datasets",
     "Condition",
     "ConditionMap",
     "CORRECTION_METHODS",
@@ -87,13 +89,11 @@ __all__ = [
     "compare_scatter",
     "enrichment_barplot",
     "pca_plot",
-    "umap_plot",
     "volcano_plot",
     "PCAResult",
-    "UMAPResult",
     "run_pca",
-    "run_umap",
     "align_results",
+    "compare_across_datasets",
     "correlate_metric",
     "overlap_summary",
     "significant_sets",

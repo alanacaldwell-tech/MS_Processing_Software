@@ -27,16 +27,17 @@ conditions (fold change + statistics) → filter → visualize → annotate → 
 6. **Visualize**: volcano plot (log2FC vs −log10 p, with non-overlapping labels
    for the top significant / largest fold-change hits) and a clustered abundance
    heatmap of the significant proteins.
-7. **PCA / UMAP**: dimensionality reduction over the samples (replicates as
+7. **PCA**: principal component analysis over the samples (replicates as
    observations, proteins as features) to assess replicate clustering and
    condition separation.
 8. **Annotate** each protein with its **subcellular localization** and a snapshot
    of its **function** via the UniProt REST API.
 9. **GO enrichment**: over-representation test of the significant genes against a
    GO gene-set library via the Enrichr API.
-10. **Compare across data sets**: align results from multiple Excel files by
-    protein, build a side-by-side metric table, quantify the overlap of
-    significant hits, and correlate fold changes between data sets.
+10. **Compare across data sets**: load **one or more** Excel files (with columns
+    either identical across files or configured per file via `DatasetSpec`),
+    align results by protein, build a side-by-side metric table, quantify the
+    overlap of significant hits, and correlate fold changes between data sets.
 
 ### Network note
 
@@ -94,9 +95,9 @@ hits = msp.filter_results(results, max_fdr=0.05, min_abs_log2fc=1.0, min_unique_
 | `ms_processing/conditions.py` | Assign replicate columns to conditions |
 | `ms_processing/stats.py` | Means, fold change, t-tests, multiple-testing correction |
 | `ms_processing/filtering.py` | Filter results by p-value / FDR / fold change / peptides |
-| `ms_processing/plots.py` | Volcano, heatmap, PCA/UMAP, enrichment bar, cross-data-set scatter |
-| `ms_processing/multivariate.py` | PCA & UMAP over samples (scikit-learn, umap-learn) |
-| `ms_processing/crossdataset.py` | Align & compare results across multiple data sets |
+| `ms_processing/plots.py` | Volcano, heatmap, PCA, enrichment bar, cross-data-set scatter |
+| `ms_processing/multivariate.py` | PCA over samples (scikit-learn) |
+| `ms_processing/crossdataset.py` | Load & compare results across multiple data sets |
 | `ms_processing/annotations.py` | UniProt lookups: subcellular localization + function |
 | `ms_processing/enrichment.py` | GO term enrichment via Enrichr |
 

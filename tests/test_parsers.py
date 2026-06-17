@@ -101,20 +101,20 @@ def test_pca_runs_and_plots():
     assert msp.pca_plot(pca) is not None
 
 
-def test_umap_runs_and_plots():
-    ds = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
-    cmap = msp.ConditionMap.from_mapping(
-        {
-            "Treatment": ["Treatment_1", "Treatment_2", "Treatment_3"],
-            "Mock": ["Mock_1", "Mock_2", "Mock_3"],
-        }
-    )
-    um = msp.run_umap(ds, cmap, n_components=2)
-    assert um.embedding.shape[0] == 6
-    assert {"Condition", "UMAP1", "UMAP2"}.issubset(um.embedding.columns)
-    # n_neighbors must be capped below the sample count.
-    assert um.params["n_neighbors"] < 6
-    assert msp.umap_plot(um) is not None
+def test_load_datasets_shared_and_per_file():
+    paths = ["sample_data/sample_dataset.xlsx", "sample_data/sample_dataset_2.xlsx"]
+    # Identical-columns mode: shared experiment type + plex, custom names.
+    shared = msp.load_datasets(paths, "ABPP", 6, names=["A", "B"])
+    assert set(shared) == {"A", "B"}
+    assert shared["A"].plex.n_channels == 6
+
+    # Per-file mode: each file carries its own settings.
+    specs = [
+        msp.DatasetSpec(paths[0], "ABPP", 6, name="A"),
+        msp.DatasetSpec(paths[1], "AP-MS", 6, name="B"),
+    ]
+    per_file = msp.load_datasets(specs)
+    assert per_file["B"].experiment_type.name == "AP-MS"
 
 
 def test_crossdataset_compare():
@@ -124,12 +124,13 @@ def test_crossdataset_compare():
             "Mock": ["Mock_1", "Mock_2", "Mock_3"],
         }
     )
-    ds_a = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
-    ds_b = msp.load_dataset("sample_data/sample_dataset_2.xlsx", "ABPP", 6)
-    results = {
-        "A": msp.compare_conditions(ds_a, cmap, "Treatment", "Mock"),
-        "B": msp.compare_conditions(ds_b, cmap, "Treatment", "Mock"),
-    }
+    datasets = msp.load_datasets(
+        ["sample_data/sample_dataset.xlsx", "sample_data/sample_dataset_2.xlsx"],
+        "ABPP", 6, names=["A", "B"],
+    )
+    # Shared condition map (identical columns across files).
+    results = msp.compare_across_datasets(datasets, cmap, "Treatment", "Mock")
+    assert set(results) == {"A", "B"}
 
     aligned = msp.align_results(results)
     assert "log2_fold_change__A" in aligned.columns
@@ -152,6 +153,6 @@ if __name__ == "__main__":
     test_parse_enrichr_results_sorted()
     test_plots_render()
     test_pca_runs_and_plots()
-    test_umap_runs_and_plots()
+    test_load_datasets_shared_and_per_file()
     test_crossdataset_compare()
     print("All tests passed.")
