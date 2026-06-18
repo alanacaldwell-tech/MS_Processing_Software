@@ -133,6 +133,36 @@ def test_fill_gene_symbols_offline_paths():
         pass
 
 
+def test_normalization_and_log_fold_change():
+    import numpy as np
+
+    ds = msp.load_dataset("sample_data/sample_dataset.xlsx", "ABPP", 6)
+    cmap = msp.ConditionMap.from_mapping(
+        {
+            "Treatment": ["Treatment_1", "Treatment_2", "Treatment_3"],
+            "Mock": ["Mock_1", "Mock_2", "Mock_3"],
+        }
+    )
+
+    norm = msp.normalize_dataset(ds, "log2_median")
+    assert norm.is_log_transformed is True
+    assert norm.normalization == "log2_median"
+    # Median centering puts every sample's median at ~0 on the log scale.
+    assert np.allclose(norm.data.median(axis=0).to_numpy(), 0.0, atol=1e-9)
+
+    # On a log-scaled dataset, fold_change == 2 ** log2_fold_change.
+    res = msp.compare_conditions(norm, cmap, "Treatment", "Mock")
+    mask = np.isfinite(res["log2_fold_change"]) & np.isfinite(res["fold_change"])
+    assert np.allclose(res.loc[mask, "fold_change"], 2 ** res.loc[mask, "log2_fold_change"])
+
+    # VSN is a reserved stub.
+    try:
+        msp.normalize_dataset(ds, "vsn")
+        assert False, "expected NotImplementedError"
+    except NotImplementedError:
+        pass
+
+
 def test_crossdataset_compare():
     cmap = msp.ConditionMap.from_mapping(
         {
@@ -171,5 +201,6 @@ if __name__ == "__main__":
     test_pca_runs_and_plots()
     test_load_datasets_shared_and_per_file()
     test_fill_gene_symbols_offline_paths()
+    test_normalization_and_log_fold_change()
     test_crossdataset_compare()
     print("All tests passed.")

@@ -10,38 +10,47 @@ consistent between the notebook and the eventual app.
 
 ## Pipeline
 
-**ingest → group biological replicates into conditions → average → compare
-conditions (fold change + statistics) → filter → visualize → annotate → GO enrichment**
+**ingest → map gene symbols → normalize → group replicates → average → compare
+conditions (fold change + statistics) → filter → visualize → PCA → annotate → GO enrichment**
 
 1. **Ingest** an Excel file. First row = headers; each row = one identified
    protein. Columns A–Y are annotation/metadata (protein IDs, gene names,
    `# Unique Peptides`, …); quantitative data starts at column **Z** and spans
    the plex count (6 / 10 / 16 / custom), one column per biological replicate.
-2. **Group** replicate columns into named experimental conditions
+2. **Map gene symbols**: proteins are keyed on a `Gene Symbol` column; blanks are
+   filled from the `Accession` (UniProt) column via `fill_gene_symbols`.
+3. **Normalize** the quantitative data. Recommended default `log2_median`:
+   log2-transform (variance stabilization) then per-sample median centering (the
+   Perseus convention). Other options: `log2`, `median`, `none`; `vsn` is a
+   reserved future alternative. Once log-scaled, the dataset records this and the
+   stats/PCA steps adjust automatically.
+4. **Group** replicate columns into named experimental conditions
    (e.g. Z–AB = "Treatment").
-3. **Average** protein abundance per protein per condition.
-4. **Compare** two conditions (numerator vs denominator): fold change,
+5. **Average** protein abundance per protein per condition.
+6. **Compare** two conditions (numerator vs denominator): fold change,
    log2(fold change), two-sided independent t-test p-value, adjusted p-value /
-   FDR (selectable correction method), and −log10(p-value).
-5. **Filter** by p-value, FDR, |log2 fold change|, and `# Unique Peptides`.
-6. **Visualize**: volcano plot (log2FC vs −log10 p, with non-overlapping labels
+   FDR (selectable correction method), and −log10(p-value). On log-scaled data,
+   log2 fold change is a difference of means (handled automatically).
+7. **Filter** by p-value, FDR, |log2 fold change|, and `# Unique Peptides`.
+8. **Visualize**: volcano plot (log2FC vs −log10 p, with non-overlapping labels
    for the top significant / largest fold-change hits) and a clustered abundance
    heatmap of the significant proteins.
-7. **PCA**: principal component analysis over the samples (replicates as
+9. **PCA**: principal component analysis over the samples (replicates as
    observations, proteins as features) to assess replicate clustering and
    condition separation.
-8. **Annotate** each protein with its **subcellular localization** and a snapshot
-   of its **function** via the UniProt REST API.
-9. **GO enrichment**: over-representation test of the significant genes against a
-   GO gene-set library via the Enrichr API.
-10. **Compare across data sets**: load **one or more** Excel files (with columns
+10. **Annotate** each protein with its **subcellular localization** and a snapshot
+    of its **function** via the UniProt REST API.
+11. **GO enrichment**: over-representation test of the significant genes against a
+    GO gene-set library via the Enrichr API.
+12. **Compare across data sets**: load **one or more** Excel files (with columns
     either identical across files or configured per file via `DatasetSpec`),
-    align results by protein, build a side-by-side metric table, quantify the
-    overlap of significant hits, and correlate fold changes between data sets.
+    normalize each, align results by protein, build a side-by-side metric table,
+    quantify the overlap of significant hits, and correlate fold changes.
 
 ### Network note
 
-Steps 7–8 call external services (`rest.uniprot.org`, `maayanlab.cloud`) and need
+The gene-symbol mapping, annotation, and enrichment steps call external services
+(`rest.uniprot.org`, `maayanlab.cloud`) and need
 outbound internet access at runtime. They raise `AnnotationServiceError` /
 `EnrichmentServiceError` if unreachable, and the notebook degrades gracefully so
 the rest of the pipeline still runs offline.
@@ -95,6 +104,7 @@ hits = msp.filter_results(results, max_fdr=0.05, min_abs_log2fc=1.0, min_unique_
 | `ms_processing/plex.py` | Multiplex config (6/10/16/custom) |
 | `ms_processing/dataset.py` | Load Excel (one or many); split annotation vs. data columns |
 | `ms_processing/mapping.py` | Fill missing `Gene Symbol`s from UniProt accessions |
+| `ms_processing/normalization.py` | log2 / median normalization (VSN reserved) |
 | `ms_processing/conditions.py` | Assign replicate columns to conditions |
 | `ms_processing/stats.py` | Means, fold change, t-tests, multiple-testing correction |
 | `ms_processing/filtering.py` | Filter results by p-value / FDR / fold change / peptides |

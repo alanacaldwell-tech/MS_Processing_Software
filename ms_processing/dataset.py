@@ -38,12 +38,17 @@ class ProteomicsDataset:
         experiment_type: The declared experiment type.
         plex: Multiplexing configuration (number of data columns).
         data_start_column: Excel column letter where data begins (default "Z").
+        is_log_transformed: True once the quantitative data has been log-scaled
+            (downstream fold change is then a difference of means, not a ratio).
+        normalization: Name of the normalization applied (None if raw).
     """
 
     raw: pd.DataFrame
     experiment_type: ExperimentType
     plex: PlexConfig
     data_start_column: str = DEFAULT_DATA_START_COLUMN
+    is_log_transformed: bool = False
+    normalization: str | None = None
 
     def __post_init__(self) -> None:
         start = self.data_start_index
@@ -93,6 +98,8 @@ class ProteomicsDataset:
             "n_annotation_columns": len(self.annotation_columns),
             "data_column_range": f"{first}-{last}",
             "data_columns": self.data_columns,
+            "normalization": self.normalization,
+            "is_log_transformed": self.is_log_transformed,
         }
 
 

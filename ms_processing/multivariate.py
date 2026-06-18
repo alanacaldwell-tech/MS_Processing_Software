@@ -92,7 +92,7 @@ def run_pca(
     *,
     n_components: int = 2,
     scale: bool = True,
-    log_transform: bool = False,
+    log_transform: bool | None = None,
 ) -> PCAResult:
     """Run PCA over the quantitative data of ``dataset``.
 
@@ -108,12 +108,15 @@ def run_pca(
             sample/feature counts).
         scale: Standardize each protein (zero mean, unit variance) before PCA so
             high-abundance proteins don't dominate. Recommended.
-        log_transform: Apply ``log2(x + 1)`` first (use when abundances are raw
-            intensities rather than already log-scaled).
+        log_transform: Apply ``log2(x + 1)`` first. Defaults to ``None``, which
+            logs only when the dataset is not already log-scaled (so a normalized
+            dataset isn't logged twice, and raw data still gets logged for PCA).
 
     Returns:
         A :class:`PCAResult`.
     """
+    if log_transform is None:
+        log_transform = not dataset.is_log_transformed
     matrix, x = _prepare_matrix(
         dataset, scale=scale, log_transform=log_transform, method="PCA"
     )

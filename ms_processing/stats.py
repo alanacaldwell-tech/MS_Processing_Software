@@ -67,18 +67,27 @@ def compare_conditions(
     *,
     correction: str = DEFAULT_CORRECTION,
     equal_var: bool = True,
+    data_is_log: bool | None = None,
 ) -> pd.DataFrame:
     """Compare two conditions (``numerator`` vs ``denominator``).
 
     Computes, per protein:
       * mean abundance of each condition,
-      * fold change = mean(numerator) / mean(denominator) and its log2,
+      * fold change and its log2,
       * two-sided independent t-test p-value (``scipy.stats.ttest_ind``),
       * adjusted p-value / FDR using ``correction``,
       * -log10(p-value).
 
+    Fold change respects the data scale:
+      * **linear** data → fold change = mean(numerator) / mean(denominator),
+        log2 fold change = log2 of that;
+      * **log2** data → log2 fold change = mean(numerator) − mean(denominator),
+        fold change = 2 ** that, and the t-test runs on the log values.
+
     Args:
         equal_var: If True, Student's t-test; if False, Welch's t-test.
+        data_is_log: Whether the data is log-scaled. Defaults to the dataset's
+            ``is_log_transformed`` flag (set by normalization).
 
     The data set's annotation columns are preserved in the output.
     """
@@ -86,14 +95,19 @@ def compare_conditions(
     cond_a = condition_map[numerator]
     cond_b = condition_map[denominator]
     data = dataset.data
+    is_log = dataset.is_log_transformed if data_is_log is None else data_is_log
 
     a = data[list(cond_a.replicate_columns)]
     b = data[list(cond_b.replicate_columns)]
 
     mean_a = a.mean(axis=1)
     mean_b = b.mean(axis=1)
-    fold_change = mean_a / mean_b
-    log2_fc = np.log2(fold_change.where(fold_change > 0))
+    if is_log:
+        log2_fc = mean_a - mean_b
+        fold_change = np.power(2.0, log2_fc)
+    else:
+        fold_change = mean_a / mean_b
+        log2_fc = np.log2(fold_change.where(fold_change > 0))
 
     # Row-wise two-sided independent t-test; NaN where it cannot be computed.
     with np.errstate(invalid="ignore"):

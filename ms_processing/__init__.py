@@ -24,6 +24,12 @@ from .dataset import (
 )
 from .conditions import Condition, ConditionMap
 from .mapping import fill_gene_symbols
+from .normalization import (
+    DEFAULT_NORMALIZATION,
+    NORMALIZATION_METHODS,
+    normalize_data,
+    normalize_dataset,
+)
 from .stats import (
     CORRECTION_METHODS,
     DEFAULT_CORRECTION,
@@ -76,6 +82,10 @@ __all__ = [
     "load_datasets",
     "DEFAULT_GENE_COLUMN",
     "fill_gene_symbols",
+    "DEFAULT_NORMALIZATION",
+    "NORMALIZATION_METHODS",
+    "normalize_data",
+    "normalize_dataset",
     "Condition",
     "ConditionMap",
     "CORRECTION_METHODS",
