@@ -14,7 +14,7 @@ import pandas as pd
 import seaborn as sns
 
 from .conditions import ConditionMap
-from .dataset import ProteomicsDataset
+from .dataset import DEFAULT_GENE_COLUMN, ProteomicsDataset
 
 
 def volcano_plot(
@@ -26,7 +26,7 @@ def volcano_plot(
     adj_pvalue_col: str = "adj_p_value",
     fc_threshold: float = 1.0,
     p_threshold: float = 0.05,
-    label_col: str | None = "Gene",
+    label_col: str | None = DEFAULT_GENE_COLUMN,
     n_labels: int = 10,
     ax: plt.Axes | None = None,
 ) -> plt.Axes:
@@ -116,7 +116,7 @@ def abundance_heatmap(
     condition_map: ConditionMap,
     *,
     proteins: pd.Index | list | None = None,
-    label_col: str = "Gene",
+    label_col: str = DEFAULT_GENE_COLUMN,
     zscore_rows: bool = True,
     cluster: bool = True,
     max_proteins: int = 50,
@@ -288,7 +288,7 @@ def compare_scatter(
     name_y: str,
     *,
     metric: str = "log2_fold_change",
-    label_col: str | None = "Gene",
+    label_col: str | None = DEFAULT_GENE_COLUMN,
     annotate_corr: bool = True,
     ax: plt.Axes | None = None,
 ) -> plt.Axes:

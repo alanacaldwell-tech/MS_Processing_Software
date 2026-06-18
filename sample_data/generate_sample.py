@@ -30,9 +30,15 @@ GENES = [f"GENE{i}" for i in range(N_PROTEINS)]
 
 
 def _annotations(rng: np.random.Generator) -> dict:
+    # Leave a few gene symbols blank to demonstrate UniProt-accession mapping.
+    gene_symbols = list(GENES)
+    for i in (3, 17, 42):
+        if i < len(gene_symbols):
+            gene_symbols[i] = ""
+
     annotations = {
         "Accession": ACCESSIONS,
-        "Gene": GENES,
+        "Gene Symbol": gene_symbols,
         "Description": ["Example protein"] * N_PROTEINS,
         "# Unique Peptides": rng.integers(1, 25, size=N_PROTEINS),
     }

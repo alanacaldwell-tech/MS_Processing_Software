@@ -15,8 +15,15 @@ from .columns import (
 )
 from .experiments import EXPERIMENT_TYPES, ExperimentType, get_experiment_type
 from .plex import STANDARD_PLEXES, PlexConfig
-from .dataset import DatasetSpec, ProteomicsDataset, load_dataset, load_datasets
+from .dataset import (
+    DEFAULT_GENE_COLUMN,
+    DatasetSpec,
+    ProteomicsDataset,
+    load_dataset,
+    load_datasets,
+)
 from .conditions import Condition, ConditionMap
+from .mapping import fill_gene_symbols
 from .stats import (
     CORRECTION_METHODS,
     DEFAULT_CORRECTION,
@@ -67,6 +74,8 @@ __all__ = [
     "load_dataset",
     "DatasetSpec",
     "load_datasets",
+    "DEFAULT_GENE_COLUMN",
+    "fill_gene_symbols",
     "Condition",
     "ConditionMap",
     "CORRECTION_METHODS",

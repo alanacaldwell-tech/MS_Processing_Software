@@ -117,6 +117,22 @@ def test_load_datasets_shared_and_per_file():
     assert per_file["B"].experiment_type.name == "AP-MS"
 
 
+def test_fill_gene_symbols_offline_paths():
+    import pandas as pd
+
+    # No missing gene symbols -> returns unchanged, makes no network call.
+    df = pd.DataFrame({"Accession": ["P1", "P2"], "Gene Symbol": ["A", "B"]})
+    out = msp.fill_gene_symbols(df)
+    assert list(out["Gene Symbol"]) == ["A", "B"]
+
+    # Missing accession column -> clear KeyError, no network call.
+    try:
+        msp.fill_gene_symbols(pd.DataFrame({"Gene Symbol": [""]}))
+        assert False, "expected KeyError"
+    except KeyError:
+        pass
+
+
 def test_crossdataset_compare():
     cmap = msp.ConditionMap.from_mapping(
         {
@@ -154,5 +170,6 @@ if __name__ == "__main__":
     test_plots_render()
     test_pca_runs_and_plots()
     test_load_datasets_shared_and_per_file()
+    test_fill_gene_symbols_offline_paths()
     test_crossdataset_compare()
     print("All tests passed.")

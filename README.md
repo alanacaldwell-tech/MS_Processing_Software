@@ -50,6 +50,8 @@ the rest of the pipeline still runs offline.
 
 - First Excel row is the header.
 - Each row is one protein.
+- Proteins are keyed on a `Gene Symbol` column; blanks are filled from the
+  `Accession` (UniProt) column via `fill_gene_symbols`.
 - Quantitative data begins at column **Z** (configurable via `data_start_column`).
 - Plex count = number of data columns (biological replicates).
 
@@ -91,7 +93,8 @@ hits = msp.filter_results(results, max_fdr=0.05, min_abs_log2fc=1.0, min_unique_
 | `ms_processing/columns.py` | Excel column-letter ↔ index helpers (`Z` default data start) |
 | `ms_processing/experiments.py` | Experiment-type registry (ABPP, AP-MS, whole proteome, …) |
 | `ms_processing/plex.py` | Multiplex config (6/10/16/custom) |
-| `ms_processing/dataset.py` | Load Excel; split annotation vs. data columns |
+| `ms_processing/dataset.py` | Load Excel (one or many); split annotation vs. data columns |
+| `ms_processing/mapping.py` | Fill missing `Gene Symbol`s from UniProt accessions |
 | `ms_processing/conditions.py` | Assign replicate columns to conditions |
 | `ms_processing/stats.py` | Means, fold change, t-tests, multiple-testing correction |
 | `ms_processing/filtering.py` | Filter results by p-value / FDR / fold change / peptides |

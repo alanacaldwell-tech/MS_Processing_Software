@@ -18,7 +18,7 @@ from collections.abc import Mapping
 import pandas as pd
 
 from .conditions import ConditionMap
-from .dataset import ProteomicsDataset
+from .dataset import DEFAULT_GENE_COLUMN, ProteomicsDataset
 from .filtering import filter_results
 from .stats import DEFAULT_CORRECTION, compare_conditions
 
@@ -65,7 +65,7 @@ def align_results(
     *,
     value_cols: tuple[str, ...] = ("log2_fold_change", "adj_p_value"),
     id_col: str = "Accession",
-    label_cols: tuple[str, ...] = ("Gene",),
+    label_cols: tuple[str, ...] = (DEFAULT_GENE_COLUMN,),
 ) -> pd.DataFrame:
     """Align several results tables into one wide table, keyed by ``id_col``.
 

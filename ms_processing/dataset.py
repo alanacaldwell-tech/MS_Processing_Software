@@ -25,6 +25,9 @@ from .columns import (
 from .experiments import ExperimentType, get_experiment_type
 from .plex import PlexConfig
 
+# Default annotation column holding the gene symbol for each protein.
+DEFAULT_GENE_COLUMN = "Gene Symbol"
+
 
 @dataclass
 class ProteomicsDataset:
